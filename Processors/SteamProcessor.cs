@@ -76,10 +76,23 @@ namespace SteamAccountCreator.Processors
             {
                 return 0;
             }
-            
-            string gamesCountText = GetText(gamesCountSelector).Trim();
 
-            int gamesCount = int.Parse(gamesCountText);
+            int gamesCount = 0;
+
+            if (IsElementVisible(gamesCountSelector))
+            {
+                string gamesCountText = GetText(gamesCountSelector).Trim();
+
+                try
+                {
+                    gamesCount = int.Parse(gamesCountText);
+                }
+                catch
+                {
+                    Log.Error($"Cannot parse '{gamesCountText}' to int");
+                    gamesCount = 0;
+                }
+            }
 
             return gamesCount;
         }

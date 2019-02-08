@@ -33,13 +33,26 @@ namespace SteamAccountCreator
             Log.Info($"Setting up the driver");
             IWebDriver driver = SetupDriver();
 
-            List<string> allPackages = File.ReadAllLines(ApplicationPaths.FreePackagesListPath).ToList();
+            List<string> checkedPackages = new List<string>();
+
+            if (File.Exists(ApplicationPaths.AlreadyCheckedPackagesListFilePath))
+            {
+                checkedPackages = File
+                    .ReadAllLines(ApplicationPaths.AlreadyCheckedPackagesListFilePath)
+                    .ToList();
+            }
+
+            List<string> packagesToCheck = File
+                .ReadAllLines(ApplicationPaths.FreePackagesListPath)
+                .Except(checkedPackages)
+                .ToList();
+
             List<AccountDetails> accounts = File
                 .ReadAllLines(ApplicationPaths.AccountsFilePath)
                 .Select(x => new AccountDetails(x.Split(':')[0], x.Split(':')[1]))
                 .ToList();
 
-            List<List<string>> splitPackages = SplitList(allPackages, PackagesCountPerAccount).ToList();
+            List<List<string>> splitPackages = SplitList(packagesToCheck, PackagesCountPerAccount).ToList();
 
             if (splitPackages.Count > accounts.Count)
             {
@@ -62,31 +75,49 @@ namespace SteamAccountCreator
                 int rangeEnd = (i + 1) * PackagesCountPerAccount;
 
                 //Log.Info($"Activating packages {rangeBegin}-{rangeEnd}");
-                int initialGamesCount = steamProcessor.GetGamesCount();
+                //int initialGamesCount = steamProcessor.GetGamesCount();
 
                 foreach (string package in packages)
                 {
-                    //int initialGamesCount = steamProcessor.GetGamesCount();
+                    int initialGamesCount = steamProcessor.GetGamesCount();
+                    
                     steamProcessor.ActivatePackage(package);
-                    //int finalGamesCount = steamProcessor.GetGamesCount();
+                    SaveToFile(ApplicationPaths.AlreadyCheckedPackagesListFilePath, package);
 
-                    //if (finalGamesCount > initialGamesCount)
-                    //{
-                    //    Log.Info($"Found countable package: {package}!");
-                    //}
+                    int finalGamesCount = steamProcessor.GetGamesCount();
+
+                    if (finalGamesCount > initialGamesCount)
+                    {
+                        Log.Info($"Found countable package: {package}!");
+                        SaveToFile(ApplicationPaths.CountingPackagesListFilePath, package);
+                    }
                 }
 
-                int finalGamesCount = steamProcessor.GetGamesCount();
+                //int finalGamesCount = steamProcessor.GetGamesCount();
 
-                if (finalGamesCount > initialGamesCount)
-                {
-                    Log.Info($"Found countable packages in range {rangeBegin}-{rangeEnd}!");
-                }
+                //if (finalGamesCount > initialGamesCount)
+                //{
+                //    Log.Info($"Found countable packages in range {rangeBegin}-{rangeEnd}!");
+                //    SaveToResults($"range {rangeBegin}-{rangeEnd}");
+                //}
 
                 //Log.Info($"Logging out {account.Username}");
                 steamProcessor.LogOut();
                 steamProcessor.Close();
             }
+        }
+
+        static void SaveToFile(string path, string subid)
+        {
+            string fileContents = string.Empty;
+            
+            if (File.Exists(path))
+            {
+                fileContents = File.ReadAllText(path);
+                fileContents += subid + Environment.NewLine;
+            }
+
+            File.WriteAllText(path, fileContents);
         }
 
         static IWebDriver SetupDriver()
