@@ -119,8 +119,6 @@ namespace SteamAccountCreator.Processors
             {
                 ExecuteScript(activationScript);
 
-                Wait(TimeSpan.FromMilliseconds(500));
-
                 // TODO: Replace with Refresh()
                 GoToUrl("about:blank");
                 GoToUrl(LicensesUrl);

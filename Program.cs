@@ -38,7 +38,7 @@ namespace SteamAccountCreator
             if (File.Exists(ApplicationPaths.FailedPackagesListFilePath))
             {
                 List<string> failedPackages = File
-                    .ReadAllLines(ApplicationPaths.CountingPackagesListFilePath)
+                    .ReadAllLines(ApplicationPaths.FailedPackagesListFilePath)
                     .ToList();
 
                 packagesToCheck = packagesToCheck.Except(failedPackages).ToList();
@@ -96,23 +96,24 @@ namespace SteamAccountCreator
 
                 //Log.Info($"Activating packages {rangeBegin}-{rangeEnd}");
                 //int initialGamesCount = steamProcessor.GetGamesCount();
+                
+                int initialGamesCount = steamProcessor.GetGamesCount();
 
                 foreach (string package in packages)
                 {
-                    int initialGamesCount = steamProcessor.GetGamesCount();
                     
                     bool success = steamProcessor.ActivatePackage(package);
 
-                    if (!success)
+                    if (success)
+                    {
+                        RemoveFromFile(ApplicationPaths.FailedPackagesListFilePath, package);
+                    }
+                    else
                     {
                         Log.Info($"Failed to activate package: {package}!");
                         SaveToFile(ApplicationPaths.FailedPackagesListFilePath, package);
 
                         continue;
-                    }
-                    else
-                    {
-                        RemoveFromFile(ApplicationPaths.FailedPackagesListFilePath, package);
                     }
 
                     int finalGamesCount = steamProcessor.GetGamesCount();
@@ -126,6 +127,8 @@ namespace SteamAccountCreator
                     {
                         SaveToFile(ApplicationPaths.NonCountingPackagesListFilePath, package);
                     }
+
+                    initialGamesCount = finalGamesCount;
                 }
 
                 //int finalGamesCount = steamProcessor.GetGamesCount();
@@ -187,7 +190,7 @@ namespace SteamAccountCreator
             options.AddArgument("--disable-notifications");
             options.AddArgument("--disable-translate");
             options.AddArgument("--disable-infobars");
-            //options.AddArgument("--headless");
+            options.AddArgument("--headless");
             options.AddArgument("--disable-gpu");
             options.AddArgument("--window-size=1920,1080");
             options.AddArgument("--start-maximized");
