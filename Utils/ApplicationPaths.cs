@@ -30,8 +30,10 @@ namespace SteamAccountCreator.Utils
 
         public static string AccountsFilePath => Path.Combine(ApplicationDirectory, "accounts.txt");
         
-        public static string AlreadyCheckedPackagesListFilePath => Path.Combine(ApplicationDirectory, "checked-packages.lst");
+        public static string NonCountingPackagesListFilePath => Path.Combine(ApplicationDirectory, "noncounting-packages.lst");
 
         public static string CountingPackagesListFilePath => Path.Combine(ApplicationDirectory, "counting-packages.lst");
+        
+        public static string FailedPackagesListFilePath => Path.Combine(ApplicationDirectory, "failed-packages.lst");
     }
 }

@@ -97,15 +97,47 @@ namespace SteamAccountCreator.Processors
             return gamesCount;
         }
 
-        public void ActivatePackage(string package)
+        public bool ActivatePackage(string package)
         {
             GoToUrl(LicensesUrl);
 
             By pageContentSelector = By.ClassName("page_content");
+            By lastGameTitleSelector = By.XPath(@"//table[@class='account_table']/tbody/tr[2]/td[2]");
+
             WaitForElementToExist(pageContentSelector);
 
             string activationScript = $"jQuery.post('//store.steampowered.com/checkout/addfreelicense',{{action:'add_to_cart',sessionid:g_sessionID,subid:{package}}})";
-            ExecuteScript(activationScript);
+            string previousGameTitle = string.Empty;
+            string currentGameTitle = string.Empty;
+
+            if (DoesElementExist(lastGameTitleSelector))
+            {
+                previousGameTitle = GetText(lastGameTitleSelector);
+            }
+
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                ExecuteScript(activationScript);
+
+                Wait(TimeSpan.FromMilliseconds(500));
+
+                // TODO: Replace with Refresh()
+                GoToUrl("about:blank");
+                GoToUrl(LicensesUrl);
+                WaitForElementToExist(pageContentSelector);
+
+                if (DoesElementExist(lastGameTitleSelector))
+                {
+                    currentGameTitle = GetText(lastGameTitleSelector);
+                }
+
+                if (currentGameTitle != previousGameTitle)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -26,26 +26,46 @@ namespace SteamAccountCreator
 
         static void FindCountablePackages()
         {
-            // TODO: Handle already-activated packages
-
             DateTime beginDate = DateTime.Now;
 
             Log.Info($"Setting up the driver");
             IWebDriver driver = SetupDriver();
 
-            List<string> checkedPackages = new List<string>();
+            List<string> packagesToCheck = File
+                .ReadAllLines(ApplicationPaths.FreePackagesListPath)
+                .ToList();
 
-            if (File.Exists(ApplicationPaths.AlreadyCheckedPackagesListFilePath))
+            if (File.Exists(ApplicationPaths.FailedPackagesListFilePath))
             {
-                checkedPackages = File
-                    .ReadAllLines(ApplicationPaths.AlreadyCheckedPackagesListFilePath)
+                List<string> failedPackages = File
+                    .ReadAllLines(ApplicationPaths.CountingPackagesListFilePath)
+                    .ToList();
+
+                packagesToCheck = packagesToCheck.Except(failedPackages).ToList();
+                packagesToCheck.AddRange(failedPackages);
+            }
+
+            if (File.Exists(ApplicationPaths.NonCountingPackagesListFilePath))
+            {
+                List<string> nonCountingPackages = File
+                    .ReadAllLines(ApplicationPaths.NonCountingPackagesListFilePath)
+                    .ToList();
+                
+                packagesToCheck = packagesToCheck
+                    .Except(nonCountingPackages)
                     .ToList();
             }
 
-            List<string> packagesToCheck = File
-                .ReadAllLines(ApplicationPaths.FreePackagesListPath)
-                .Except(checkedPackages)
-                .ToList();
+            if (File.Exists(ApplicationPaths.CountingPackagesListFilePath))
+            {
+                List<string> countingPackages = File
+                    .ReadAllLines(ApplicationPaths.CountingPackagesListFilePath)
+                    .ToList();
+                
+                packagesToCheck = packagesToCheck
+                    .Except(countingPackages)
+                    .ToList();
+            }
 
             List<AccountDetails> accounts = File
                 .ReadAllLines(ApplicationPaths.AccountsFilePath)
@@ -81,8 +101,19 @@ namespace SteamAccountCreator
                 {
                     int initialGamesCount = steamProcessor.GetGamesCount();
                     
-                    steamProcessor.ActivatePackage(package);
-                    SaveToFile(ApplicationPaths.AlreadyCheckedPackagesListFilePath, package);
+                    bool success = steamProcessor.ActivatePackage(package);
+
+                    if (!success)
+                    {
+                        Log.Info($"Failed to activate package: {package}!");
+                        SaveToFile(ApplicationPaths.FailedPackagesListFilePath, package);
+
+                        continue;
+                    }
+                    else
+                    {
+                        RemoveFromFile(ApplicationPaths.FailedPackagesListFilePath, package);
+                    }
 
                     int finalGamesCount = steamProcessor.GetGamesCount();
 
@@ -90,6 +121,10 @@ namespace SteamAccountCreator
                     {
                         Log.Info($"Found countable package: {package}!");
                         SaveToFile(ApplicationPaths.CountingPackagesListFilePath, package);
+                    }
+                    else
+                    {
+                        SaveToFile(ApplicationPaths.NonCountingPackagesListFilePath, package);
                     }
                 }
 
@@ -109,15 +144,38 @@ namespace SteamAccountCreator
 
         static void SaveToFile(string path, string subid)
         {
-            string fileContents = string.Empty;
+            List<string> fileLines = new List<string>();
             
             if (File.Exists(path))
             {
-                fileContents = File.ReadAllText(path);
-                fileContents += subid + Environment.NewLine;
-            }
+                fileLines = File.ReadAllLines(path).ToList();
 
-            File.WriteAllText(path, fileContents);
+                if (fileLines.Contains(subid))
+                {
+                    return;
+                }
+            }
+            
+            fileLines.Add(subid);
+            File.WriteAllLines(path, fileLines);
+        }
+
+        static void RemoveFromFile(string path, string subid)
+        {
+            List<string> fileLines = new List<string>();
+            
+            if (File.Exists(path))
+            {
+                fileLines = File.ReadAllLines(path).ToList();
+
+                if (!fileLines.Contains(subid))
+                {
+                    return;
+                }
+            }
+            
+            fileLines.Remove(subid);
+            File.WriteAllLines(path, fileLines);
         }
 
         static IWebDriver SetupDriver()
@@ -129,7 +187,7 @@ namespace SteamAccountCreator
             options.AddArgument("--disable-notifications");
             options.AddArgument("--disable-translate");
             options.AddArgument("--disable-infobars");
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
             options.AddArgument("--disable-gpu");
             options.AddArgument("--window-size=1920,1080");
             options.AddArgument("--start-maximized");
