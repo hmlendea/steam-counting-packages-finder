@@ -122,13 +122,13 @@ namespace SteamAccountCreator
                     {
                         Log.Info($"Found countable package: {package}!");
                         SaveToFile(ApplicationPaths.CountingPackagesListFilePath, package);
+
+                        initialGamesCount = finalGamesCount;
                     }
                     else
                     {
                         SaveToFile(ApplicationPaths.NonCountingPackagesListFilePath, package);
                     }
-
-                    initialGamesCount = finalGamesCount;
                 }
 
                 //int finalGamesCount = steamProcessor.GetGamesCount();
