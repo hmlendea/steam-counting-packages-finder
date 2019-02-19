@@ -151,7 +151,10 @@ namespace SteamAccountCreator
             
             if (File.Exists(path))
             {
-                fileLines = File.ReadAllLines(path).ToList();
+                fileLines = File
+                    .ReadAllLines(path)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
 
                 if (fileLines.Contains(subid))
                 {
@@ -169,7 +172,10 @@ namespace SteamAccountCreator
             
             if (File.Exists(path))
             {
-                fileLines = File.ReadAllLines(path).ToList();
+                fileLines = File
+                    .ReadAllLines(path)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
 
                 if (!fileLines.Contains(subid))
                 {
