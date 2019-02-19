@@ -27,13 +27,13 @@ namespace SteamAccountCreator.Utils
         public static string DataDirectory => Path.Combine(ApplicationDirectory, "Data");
 
         public static string FreePackagesListPath => Path.Combine(DataDirectory, "free-packages.lst");
-
-        public static string AccountsFilePath => Path.Combine(ApplicationDirectory, "accounts.txt");
         
-        public static string NonCountingPackagesListFilePath => Path.Combine(ApplicationDirectory, "noncounting-packages.lst");
+        public static string NonCountingPackagesListFilePath => Path.Combine(DataDirectory, "noncounting-packages.lst");
 
         public static string CountingPackagesListFilePath => Path.Combine(ApplicationDirectory, "counting-packages.lst");
         
         public static string FailedPackagesListFilePath => Path.Combine(ApplicationDirectory, "failed-packages.lst");
+
+        public static string AccountsFilePath => Path.Combine(ApplicationDirectory, "accounts.txt");
     }
 }
