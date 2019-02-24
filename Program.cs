@@ -19,8 +19,13 @@ namespace SteamAccountCreator
     {
         const int PackagesCountPerAccount = 50;
 
+        static IWebDriver driver;
+
         static void Main(string[] args)
         {
+            Log.Info($"Setting up the driver");
+            driver = SetupDriver();
+
             FindCountablePackages();
         }
 
@@ -28,14 +33,8 @@ namespace SteamAccountCreator
         {
             DateTime beginDate = DateTime.Now;
 
-            Log.Info($"Setting up the driver");
-            IWebDriver driver = SetupDriver();
-
             List<string> packagesToCheck = GetPackagesList();
-            List<AccountDetails> accounts = File
-                .ReadAllLines(ApplicationPaths.AccountsFilePath)
-                .Select(x => new AccountDetails(x.Split(':')[0], x.Split(':')[1]))
-                .ToList();
+            List<AccountDetails> accounts = GetAccounts().ToList();
 
             Log.Info($"Loaded {packagesToCheck.Count} packages for checking");
 
@@ -97,26 +96,43 @@ namespace SteamAccountCreator
                         SaveToFile(ApplicationPaths.NonCountingPackagesListFilePath, package);
                     }
                 }
-
-                //int finalGamesCount = steamProcessor.GetGamesCount();
-
-                //if (finalGamesCount > initialGamesCount)
-                //{
-                //    Log.Info($"Found countable packages in range {rangeBegin}-{rangeEnd}!");
-                //    SaveToResults($"range {rangeBegin}-{rangeEnd}");
-                //}
-
-                //Log.Info($"Logging out {account.Username}");
+                
                 steamProcessor.LogOut();
                 steamProcessor.Close();
             }
         }
 
+        static IEnumerable<string> GetFreePackages()
+        {
+            Log.Info("Retrieving the free packages list");
+
+            AccountDetails account = GetAccounts().First();
+
+            SteamProcessor steam = new SteamProcessor(driver, account);
+            steam.LogIn();
+
+            SteamDbProcessor steamDb = new SteamDbProcessor(driver);
+            IEnumerable<string> freePackages = steamDb.GetFreePackagesList();
+            steamDb.Close();
+
+            steam.LogOut();
+            steam.Close();
+
+            return freePackages;
+        }
+
+        static IEnumerable<AccountDetails> GetAccounts()
+        {
+            IEnumerable<AccountDetails> accounts = File
+                .ReadAllLines(ApplicationPaths.AccountsFilePath)
+                .Select(x => new AccountDetails(x.Split(':')[0], x.Split(':')[1]));
+            
+            return accounts;
+        }
+
         static List<string> GetPackagesList()
         {
-            List<string> packagesToCheck = File
-                .ReadAllLines(ApplicationPaths.FreePackagesListPath)
-                .ToList();
+            List<string> packagesToCheck = GetFreePackages().ToList();
 
             List<string> nonCountingPackages = new List<string>();
             List<string> countingPackages = new List<string>();
@@ -226,6 +242,8 @@ namespace SteamAccountCreator
             options.AddArgument("--window-size=1920,1080");
             options.AddArgument("--start-maximized");
             options.AddArgument("--blink-settings=imagesEnabled=false");
+
+            options.AddExtension(ApplicationPaths.SteamDbExtensionFilePath);
 
             ChromeDriverService service = ChromeDriverService.CreateDefaultService();
             service.SuppressInitialDiagnosticInformation = true;

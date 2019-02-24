@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Data/free-packages.lst"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+    <None Update="Data/Steam Database.crx"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
     <None Update="Data/noncounting-packages.lst"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
   </ItemGroup>
 

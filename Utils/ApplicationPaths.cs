@@ -26,7 +26,7 @@ namespace SteamAccountCreator.Utils
 
         public static string DataDirectory => Path.Combine(ApplicationDirectory, "Data");
 
-        public static string FreePackagesListPath => Path.Combine(DataDirectory, "free-packages.lst");
+        public static string SteamDbExtensionFilePath => Path.Combine(DataDirectory, "Steam Database.crx");
         
         public static string NonCountingPackagesListFilePath => Path.Combine(DataDirectory, "noncounting-packages.lst");
 
