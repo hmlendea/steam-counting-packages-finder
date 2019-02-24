@@ -31,46 +31,13 @@ namespace SteamAccountCreator
             Log.Info($"Setting up the driver");
             IWebDriver driver = SetupDriver();
 
-            List<string> packagesToCheck = File
-                .ReadAllLines(ApplicationPaths.FreePackagesListPath)
-                .ToList();
-
-            if (File.Exists(ApplicationPaths.FailedPackagesListFilePath))
-            {
-                List<string> failedPackages = File
-                    .ReadAllLines(ApplicationPaths.FailedPackagesListFilePath)
-                    .ToList();
-
-                packagesToCheck = packagesToCheck.Except(failedPackages).ToList();
-                packagesToCheck.AddRange(failedPackages);
-            }
-
-            if (File.Exists(ApplicationPaths.NonCountingPackagesListFilePath))
-            {
-                List<string> nonCountingPackages = File
-                    .ReadAllLines(ApplicationPaths.NonCountingPackagesListFilePath)
-                    .ToList();
-                
-                packagesToCheck = packagesToCheck
-                    .Except(nonCountingPackages)
-                    .ToList();
-            }
-
-            if (File.Exists(ApplicationPaths.CountingPackagesListFilePath))
-            {
-                List<string> countingPackages = File
-                    .ReadAllLines(ApplicationPaths.CountingPackagesListFilePath)
-                    .ToList();
-                
-                packagesToCheck = packagesToCheck
-                    .Except(countingPackages)
-                    .ToList();
-            }
-
+            List<string> packagesToCheck = GetPackagesList();
             List<AccountDetails> accounts = File
                 .ReadAllLines(ApplicationPaths.AccountsFilePath)
                 .Select(x => new AccountDetails(x.Split(':')[0], x.Split(':')[1]))
                 .ToList();
+
+            Log.Info($"Loaded {packagesToCheck.Count} packages for checking");
 
             List<List<string>> splitPackages = SplitList(packagesToCheck, PackagesCountPerAccount).ToList();
 
@@ -143,6 +110,64 @@ namespace SteamAccountCreator
                 steamProcessor.LogOut();
                 steamProcessor.Close();
             }
+        }
+
+        static List<string> GetPackagesList()
+        {
+            List<string> packagesToCheck = File
+                .ReadAllLines(ApplicationPaths.FreePackagesListPath)
+                .ToList();
+
+            List<string> nonCountingPackages = new List<string>();
+            List<string> countingPackages = new List<string>();
+            List<string> failedPackages = new List<string>();
+
+            if (File.Exists(ApplicationPaths.NonCountingPackagesListFilePath))
+            {
+                nonCountingPackages = File
+                    .ReadAllLines(ApplicationPaths.NonCountingPackagesListFilePath)
+                    .ToList();
+            }
+
+            if (File.Exists(ApplicationPaths.CountingPackagesListFilePath))
+            {
+                countingPackages = File
+                    .ReadAllLines(ApplicationPaths.CountingPackagesListFilePath)
+                    .ToList();
+            }
+
+            if (File.Exists(ApplicationPaths.FailedPackagesListFilePath))
+            {
+                failedPackages = File
+                    .ReadAllLines(ApplicationPaths.FailedPackagesListFilePath)
+                    .ToList();
+            }
+                
+            int oldFailedCount = failedPackages.Count;
+
+            failedPackages = failedPackages.Except(nonCountingPackages).ToList();
+            failedPackages = failedPackages.Except(countingPackages).ToList();
+            
+            packagesToCheck = packagesToCheck
+                .Except(nonCountingPackages)
+                .Except(countingPackages)
+                .Except(failedPackages)
+                .ToList();
+
+            if (packagesToCheck.Count == 0)
+            {
+                Log.Info("Removing the failed packages cache");
+                File.WriteAllText(ApplicationPaths.FailedPackagesListFilePath, string.Empty);
+            }
+            else if (failedPackages.Count != oldFailedCount)
+            {
+                Log.Info("Updating the failed packages cache");
+                File.WriteAllLines(ApplicationPaths.FailedPackagesListFilePath, failedPackages);
+            }
+
+            packagesToCheck.AddRange(failedPackages);
+
+            return packagesToCheck;
         }
 
         static void SaveToFile(string path, string subid)
