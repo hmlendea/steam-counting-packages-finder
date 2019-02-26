@@ -98,7 +98,7 @@ namespace SteamAccountCreator
                 }
                 
                 steamProcessor.LogOut();
-                steamProcessor.Close();
+                steamProcessor.Dispose();
             }
         }
 
@@ -107,16 +107,20 @@ namespace SteamAccountCreator
             Log.Info("Retrieving the free packages list");
 
             AccountDetails account = GetAccounts().First();
+            IEnumerable<string> freePackages;
 
-            SteamProcessor steam = new SteamProcessor(driver, account);
-            steam.LogIn();
+            using (SteamProcessor steam = new SteamProcessor(driver, account))
+            {
+                steam.LogIn();
 
-            SteamDbProcessor steamDb = new SteamDbProcessor(driver);
-            IEnumerable<string> freePackages = steamDb.GetFreePackagesList();
-            steamDb.Close();
+                using (SteamDbProcessor steamDb = new SteamDbProcessor(driver))
+                {
+                    freePackages = steamDb.GetFreePackagesList();
+                    steamDb.Dispose();
+                }
 
-            steam.LogOut();
-            steam.Close();
+                steam.LogOut();
+            }
 
             return freePackages;
         }
