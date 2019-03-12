@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 
+using NuciExtensions;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 
 using SteamAccountCreator.Entities;
-using SteamAccountCreator.Extensions;
 using SteamAccountCreator.Processors;
 using SteamAccountCreator.Utils;
 
